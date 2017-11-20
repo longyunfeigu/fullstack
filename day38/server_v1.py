@@ -18,8 +18,8 @@ print('starting...')
 
 conn, addr = phone.accept()
 
-# 用recv(1) 模拟client发送2000然而recv(1024)的情况
-data1 = conn.recv(1)
+
+data1 = conn.recv(1014)
 
 # data2 既然收到的内容为空也就是收不到内容为什么不会阻塞呢？
 # 因为客户端程序已经正常执行完毕了,区别于之前的client发空然后recv的情况
@@ -27,10 +27,4 @@ data2 = conn.recv(1024)
 
 print(data1)
 print(data2)
-
-# 结果如下:
-# b'h'
-# b'ello'
-
-# 为什么得到这样的结果：缓冲区有内容recv就不会阻塞
 
