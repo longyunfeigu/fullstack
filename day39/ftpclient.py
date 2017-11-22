@@ -5,14 +5,14 @@ import socket
 import struct
 import json
 import os
-import socketserver
+
 
 class FTPClient:
     address_family = socket.AF_INET
     socket_type = socket.SOCK_STREAM
     max_package_size = 8192
     coding = 'utf-8'
-    client_dir = 'C:\\Users\\Administrator\\Desktop'
+    client_dir = 'C:\\Users\Administrator\\PycharmProjects\\fullstack'
 
     def __init__(self, server_address, connect=True):
         """Constructor.  May be extended, do not override."""
@@ -44,7 +44,7 @@ class FTPClient:
         """merely processing client command"""
         if not self.connect:
             self.client_connect()
-        while True:
+        while True:    # 通信循环
             cmd = input('>>>:').strip()
             if not cmd:
                 continue
@@ -57,9 +57,11 @@ class FTPClient:
                 print('命令格式输入有误')
 
     def put(self, args):
+        # 规范化文件路径，os.path.normpath在linux平台无效
         file_path = os.path.normpath(args[-1])
         if not os.path.exists(file_path):
             print('要上传的文件不存在')
+            # 此处调用return是为了防止else语句块过大
             return
         else:
             file_size = os.stat(file_path).st_size
@@ -67,6 +69,8 @@ class FTPClient:
         headers_dict = {'command': args[0], 'filename': os.path.basename(file_path), 'filesize': file_size}
         headers_json = json.dumps(headers_dict)
         headers_bytes = headers_json.encode(self.coding)
+        # 注意，struct发的是长度，先把头的长度再发过去，然后在send头信息，server取固定的头长度得到头信息长度，根据
+        # 头长度取得头信息，因此这里的两次send不会粘包，因为有头信息来控制
         self.socket.send(struct.pack('i', len(headers_bytes)))
         self.socket.send(headers_bytes)
 
@@ -76,12 +80,11 @@ class FTPClient:
                 already_send_size = len(line)
                 self.socket.send(line)
                 send_size += already_send_size
-                print(send_size)
+                # print(send_size)
             else:
                 print('upload success')
 
     def get(self, args):
-        # 发送头信息
         headers_dict = {'command': args[0], 'filename': args[-1]}
         headers_json = json.dumps(headers_dict)
         headers_bytes = headers_json.encode(self.coding)
@@ -89,8 +92,8 @@ class FTPClient:
         self.socket.send(struct.pack('i', headers_length))
         self.socket.send(headers_bytes)
 
-        headers_length = struct.unpack('i', self.socket.recv(4))[0]
-        print(headers_length)
+        headers_struct = self.socket.recv(4)
+        headers_length = struct.unpack('i', headers_struct)[0]
         headers_str = self.socket.recv(headers_length)
         headers_dict = json.loads(headers_str)
         err_msg = headers_dict.get('err_msg', None)
@@ -98,7 +101,8 @@ class FTPClient:
             print(err_msg)
             return
         file_path = os.path.join(self.client_dir, args[-1])
-        filesize = headers_dict.get('filesize')
+        print(file_path)
+        filesize = headers_dict.get('file_size')
         already_recv_size = 0
         with open(file_path, 'wb') as f:
             while already_recv_size < filesize:
@@ -106,9 +110,8 @@ class FTPClient:
                 f.write(recv_data)
                 already_recv_size += len(recv_data)
 
-
 if __name__ == '__main__':
-    obj = FTPClient(('10.20.1.50', 13140))
+    obj = FTPClient(('192.168.0.98', 13140))
     obj.run()
 
 
