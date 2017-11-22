@@ -1,0 +1,76 @@
+udp的recvfrom是阻塞的，一个recvfrom(x)必须对唯一一个sendinto(y),收完了x个字节的数据就算完成,若是y>x数据就丢失，这意味着udp根本不会粘包，但是会丢数据，不可靠
+
+tcp的协议数据不会丢，没有收完包，下次接收，会继续上次继续接收，己端总是在收到ack时才会清除缓冲区内容。数据是可靠的，但是会粘包。
+
+而对于udp协议，缓冲区的内容发送走了，另一端不管收没收到。只要发了消息缓冲区的这条消息就会被清空
+
+recv里指定的1024意思是从缓存里一次拿出1024个字节的数据
+
+send的字节流是先放入己端缓存，然后由协议控制将缓存内容发往对端，如果待发送的字节流大小大于缓存剩余空间，那么数据丢失，用sendall就会循环调用send，数据不会丢失
+
+import json,struct
+#假设通过客户端上传1T:1073741824000的文件a.txt
+
+#为避免粘包,必须自定制报头
+header={'file_size':1073741824000,'file_name':'/a/b/c/d/e/a.txt','md5':'8f6fbf8347faa4924a76856701edb0f3'} #1T数据,文件路径和md5值
+
+#为了该报头能传送,需要序列化并且转为bytes
+head_bytes=bytes(json.dumps(header),encoding='utf-8') #序列化并转成bytes,用于传输
+
+#为了让客户端知道报头的长度,用struck将报头长度这个数字转成固定长度:4个字节
+head_len_bytes=struct.pack('i',len(head_bytes)) #这4个字节里只包含了一个数字,该数字是报头的长度
+
+#客户端开始发送
+conn.send(head_len_bytes) #先发报头的长度,4个bytes
+conn.send(head_bytes) #再发报头的字节格式
+conn.sendall(文件内容) #然后发真实内容的字节格式
+
+#服务端开始接收
+head_len_bytes=s.recv(4) #先收报头4个bytes,得到报头长度的字节格式
+x=struct.unpack('i',head_len_bytes)[0] #提取报头的长度
+
+head_bytes=s.recv(x) #按照报头长度x,收取报头的bytes格式
+header=json.loads(json.dumps(header)) #提取报头
+
+#最后根据报头的内容提取真实的数据,比如
+real_data_len=s.recv(header['file_size'])
+s.recv(real_data_len)
+
+发送时：
+
+先发报头长度
+
+再编码报头内容然后发送
+
+最后发真实内容
+
+
+
+接收时：
+
+先手报头长度，用struct取出来
+
+根据取出的长度收取报头内容，然后解码，反序列化
+
+从反序列化的结果中取出待取数据的详细信息，然后去取真实的数据内容
+
+
+基于tcp的socketserver我们自己定义的类中的
+
+　　self.server即套接字对象
+　　self.request即一个链接
+　　self.client_address即客户端地址
+基于udp的socketserver我们自己定义的类中的
+
+　　self.request是一个元组（第一个元素是客户端发来的数据，第二部分是服务端的udp套接字对象），如(b'adsf', <socket.socket fd=200, family=AddressFamily.AF_INET, type=SocketKind.SOCK_DGRAM, proto=0, laddr=('127.0.0.1', 8080)>)
+　　self.client_address即客户端地址
+
+
+class MyTcpServer(socketserver.BaseRequestHandler):
+    def handle(self):
+        # ('127.0.0.1', 52336)
+        print(self.client_address)
+        # <socket.socket fd=212, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 8000), raddr=('127.0.0.1', 52336)>
+        print(self.request)
+        # <socketserver.ThreadingTCPServer object at 0x0000000001E9E8D0>
+        print(self.server)

@@ -10,7 +10,7 @@ import json
 phone = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 # 直接打电话，客户端的SIM号无所谓不重要
-phone.connect(('127.0.0.1', 8000))
+phone.connect_ex(('127.0.0.1', 8000))
 
 while True:   # 拨通电话后循环收发消息,循环不包括connect,包裹的仅仅是收发消息
     cmd = input('>>> ')

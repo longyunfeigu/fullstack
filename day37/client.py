@@ -9,7 +9,9 @@ import socket
 phone = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 # 直接打电话，客户端的SIM号无所谓不重要
-phone.connect(('127.0.0.1', 8000))
+# s.connect()     主动初始化TCP服务器连接
+# s.connect_ex()  connect()函数的扩展版本,出错时返回出错码,而不是抛出异常
+phone.connect_ex(('127.0.0.1', 8000))
 
 while True:   # 拨通电话后循环收发消息,循环不包括connect,包裹的仅仅是收发消息
     msg = input('>>> ')

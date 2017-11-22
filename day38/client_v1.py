@@ -9,7 +9,7 @@ import socket
 phone = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 # 直接打电话，客户端的SIM号无所谓不重要
-phone.connect(('127.0.0.1', 8000))
+phone.connect_ex(('127.0.0.1', 8000))
 
 phone.send(b'hello')
 # 既然时间间隔短才结合在一起发送,那么我们就可以把间隔时间调长一点

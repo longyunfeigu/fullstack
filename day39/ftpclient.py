@@ -32,7 +32,7 @@ class FTPClient:
 
            May be overridden.
         """
-        self.socket.connect(self.server_address)
+        self.socket.connect_ex(self.server_address)
 
     def client_close(self):
         """Called to clean-up the server.

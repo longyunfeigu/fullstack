@@ -18,7 +18,12 @@ print('starting...')
 
 while True:    # 一直监听连接
     conn, addr = phone.accept()
+    # 得到结果('127.0.0.1', 50267)
+    # print(conn.getpeername())
+    # 得到结果('127.0.0.1', 8000)
+    # print(conn.getsockname())
     print('电话线是', conn)
+    # 得到结果('127.0.0.1', 50267),等价于conn.getpeername()
     print('电话的另一头是', addr)
 
     while True:    # 循环收发消息
