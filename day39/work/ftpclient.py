@@ -7,6 +7,25 @@ import json
 import os
 
 
+def auth(func):
+    def inner(self):
+        while True:
+            print(self.socket.recv(1024).decode('utf-8'))
+            username = input('>>>:').strip()
+            self.socket.sendall(username.encode('utf-8'))
+            print(self.socket.recv(1024).decode('utf-8'))
+            password = input('>>>:').strip()
+            self.socket.sendall(password.encode('utf-8'))
+            confirm_msg = self.socket.recv(1024)
+            if confirm_msg == b'yes':
+                print('登录成功')
+                msg = func(self)
+                break
+                return msg
+    return inner
+
+
+
 class FTPClient:
     address_family = socket.AF_INET
     socket_type = socket.SOCK_STREAM
@@ -40,17 +59,12 @@ class FTPClient:
         """
         self.socket.close()
 
+    @auth
     def run(self):
         """merely processing client command"""
         if not self.connect:
             self.client_connect()
         while True:    # 通信循环
-            print(self.socket.recv(1024).decode('utf-8'))
-            username = input('>>>:').strip()
-            self.socket.sendall(username.encode('utf-8'))
-            print(self.socket.recv(1024).decode('utf-8'))
-            password = input('>>>:').strip()
-            self.socket.sendall(password.encode('utf-8'))
             cmd = input('>>>:').strip()
             if not cmd:
                 continue
@@ -59,8 +73,13 @@ class FTPClient:
             if hasattr(self, command):
                 func = getattr(self, command)
                 func(cmd_list)
+            elif cmd.startswith('ls'):
+                pass
+
             else:
                 print('命令格式输入有误')
+
+
 
     def put(self, args):
         # 规范化文件路径，os.path.normpath在linux平台无效
