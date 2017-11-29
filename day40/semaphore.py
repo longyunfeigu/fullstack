@@ -32,4 +32,11 @@ else:
     print('----all threads done---')
     print(num)
 """
+from threading import *
 
+def hello():
+    print("hello, world")
+
+# 3s之后执行函数
+t = Timer(3.0, hello)
+t.start()  # after 30 seconds, "hello, world" will be printed
